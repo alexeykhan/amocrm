@@ -39,6 +39,15 @@ var (
 	basic  = "Basic"
 )
 
+// tokenJSON is the struct representing the HTTP response from OAuth2
+// providers returning a token in JSON form.
+type tokenJSON struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int32  `json:"expires_in"`
+}
+
 type TokenSource interface {
 	AccessToken() string
 	RefreshToken() string

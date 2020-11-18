@@ -22,11 +22,9 @@ package oauth2
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -34,8 +32,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"golang.org/x/net/context/ctxhttp"
 )
 
 type RedirectMode string
@@ -54,37 +50,6 @@ const (
 	protocol       = "https://"
 )
 
-var (
-	ErrEmptyState          = errors.New("state must not be empty")
-	ErrAccountDomainNotSet = errors.New("account domain is not set")
-)
-
-type RequestError struct {
-	response *http.Response
-	body     []byte
-}
-
-func (r *RequestError) Error() string {
-	return fmt.Sprintf("oauth2: cannot fetch token: %v", r.response.Status)
-}
-
-func (r *RequestError) Response() *http.Response {
-	return r.response
-}
-
-func (r *RequestError) Body() []byte {
-	return r.body
-}
-
-// tokenJSON is the struct representing the HTTP response from OAuth2
-// providers returning a token in JSON form.
-type tokenJSON struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int32  `json:"expires_in"`
-}
-
 func GenerateState() string {
 	// Converting bytes to hex will always double length. Hence, we can reduce
 	// the amount of bytes by half to produce the correct length of 32 characters.
@@ -99,10 +64,13 @@ func GenerateState() string {
 
 type Client interface {
 	AuthorizeURL(state string, mode RedirectMode) (string, error)
-	AccessTokenByCode(ctx context.Context, code string) (*Token, error)
+	AccessTokenByCode(code string) (*Token, error)
 
-	SetAccountDomain(domain string) Client
+	SetDomain(domain string) Client
 }
+
+// Verify interface compliance.
+var _ Client = (*AmoCRMClient)(nil)
 
 type AmoCRMClient struct {
 	clientID     string
@@ -120,7 +88,7 @@ func New(clientID, clientSecret, redirectURL string) Client {
 	}
 }
 
-func (c *AmoCRMClient) SetAccountDomain(domain string) Client {
+func (c *AmoCRMClient) SetDomain(domain string) Client {
 	tokenURL := protocol + domain + "/oauth2/access_token"
 	c.tokenURL = &tokenURL
 	return c
@@ -129,79 +97,83 @@ func (c *AmoCRMClient) SetAccountDomain(domain string) Client {
 // AuthorizeURL returns a URL of consent page to ask for permissions.
 func (c *AmoCRMClient) AuthorizeURL(state string, mode RedirectMode) (string, error) {
 	if state == "" {
-		return "", ErrEmptyState
+		return "", oauth2Err("state must not be empty")
 	}
 
-	v := url.Values{
-		"state":     {state},
-		"client_id": {c.clientID},
-		"mode":      {mode.String()},
-	}
+	data := url.Values{
+		"state":     []string{state},
+		"client_id": []string{c.clientID},
+		"mode":      []string{mode.String()},
+	}.Encode()
 
 	var buf bytes.Buffer
 	buf.WriteString("https://www.amocrm.ru/oauth?")
-	buf.WriteString(v.Encode())
+	buf.WriteString(data)
 	return buf.String(), nil
 }
 
-func (c *AmoCRMClient) AccessTokenByCode(ctx context.Context, code string) (*Token, error) {
+func (c *AmoCRMClient) AccessTokenByCode(code string) (*Token, error) {
 	if c.tokenURL == nil {
-		return nil, ErrAccountDomainNotSet
+		return nil, oauth2Err("account domain is not set")
 	}
 
-	v := url.Values{
-		"client_id":     {c.clientID},
-		"client_secret": {c.clientSecret},
-		"redirect_uri":  {c.redirectURL},
-		"grant_type":    {"authorization_code"},
-		"code":          {code},
+	data := url.Values{
+		"code":          []string{code},
+		"client_id":     []string{c.clientID},
+		"client_secret": []string{c.clientSecret},
+		"redirect_uri":  []string{c.redirectURL},
+		"grant_type":    []string{"authorization_code"},
 	}
 
-	req, err := http.NewRequest("POST", *c.tokenURL, strings.NewReader(v.Encode()))
+	reqBody := strings.NewReader(data.Encode())
+
+	req, err := http.NewRequest("POST", *c.tokenURL, reqBody)
 	if err != nil {
-		return nil, err
+		return nil, oauth2Err("build request")
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	httpClient := &http.Client{Timeout: defaultTimeout}
+	httpClient := &http.Client{
+		Timeout: defaultTimeout,
+	}
 
-	r, err := ctxhttp.Do(ctx, httpClient, req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, oauth2Err("send request")
 	}
 
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<20))
-	if closeBodyErr := r.Body.Close(); closeBodyErr != nil {
-		return nil, closeBodyErr
+	respBody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if closeBodyErr := resp.Body.Close(); closeBodyErr != nil {
+		return nil, oauth2Err("close response body")
 	}
-
 	if err != nil {
-		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+		return nil, oauth2Err("fetch response body")
 	}
 
-	if statusCode := r.StatusCode; statusCode < 200 || statusCode > 299 {
-		return nil, &RequestError{
-			response: r,
-			body:     body,
-		}
+	if statusCode := resp.StatusCode; statusCode < 200 || statusCode > 299 {
+		return nil, oauth2Err("fetch token: response: %v - %s", resp.Status, respBody)
 	}
 
-	var tj tokenJSON
-	if err = json.Unmarshal(body, &tj); err != nil {
-		return nil, err
+	var jsonToken tokenJSON
+	if err = json.Unmarshal(respBody, &jsonToken); err != nil {
+		return nil, oauth2Err("parse token from json")
 	}
 
 	token := &Token{
-		accessToken:  tj.AccessToken,
-		tokenType:    tj.TokenType,
-		refreshToken: tj.RefreshToken,
-		expiresAt:    time.Now().Add(time.Duration(tj.ExpiresIn) * time.Second),
+		accessToken:  jsonToken.AccessToken,
+		tokenType:    jsonToken.TokenType,
+		refreshToken: jsonToken.RefreshToken,
+		expiresAt:    time.Now().Add(time.Duration(jsonToken.ExpiresIn) * time.Second),
 	}
 
 	if token.accessToken == "" {
-		return nil, errors.New("oauth2: server response missing access_token")
+		return nil, oauth2Err("server response missing access_token")
 	}
 
 	return token, nil
+}
+
+func oauth2Err(format string, args ...interface{}) error {
+	return fmt.Errorf("oauth2: "+format, args...)
 }

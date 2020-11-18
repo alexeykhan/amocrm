@@ -6,8 +6,8 @@ linter:
 	$(info # Installing golangci-lint ...)
 	$ curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin v1.31.0
 
-.PHONY: tests
-tests:
+.PHONY: test
+test:
 	$(info # Running app tests ...)
 	$ go test -cover ./...
 
