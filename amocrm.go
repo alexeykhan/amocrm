@@ -18,22 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package main
+package amocrm
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"os"
-
 	"github.com/alexeykhan/amocrm/oauth2"
 )
+
+type Client interface {
+	OAuth2Client() oauth2.Client
+}
+
+// Verify interface compliance.
+var _ Client = (*APIClient)(nil)
 
 type APIClient struct {
 	oAuth2Client oauth2.Client
 }
 
-func (c APIClient) Oauth2Client() oauth2.Client {
+func (c APIClient) OAuth2Client() oauth2.Client {
 	return c.oAuth2Client
 }
 
@@ -41,38 +43,4 @@ func New(clientID, clientSecret, redirectURL string) APIClient {
 	return APIClient{
 		oAuth2Client: oauth2.New(clientID, clientSecret, redirectURL),
 	}
-}
-
-func main() {
-	ctx := context.Background()
-
-	api := New(
-		os.Getenv("CLIENT_ID"),
-		os.Getenv("CLIENT_SECRET"),
-		os.Getenv("REDIRECT_URI"))
-
-	client := api.Oauth2Client()
-
-	url, _ := client.AuthorizeURL(oauth2.GenerateState(), oauth2.PostMessageMode)
-	fmt.Printf("Visit the URL for the auth dialog: %v", url)
-
-	// НА САМОМ ДЕЛЕ ЗДЕСЬ ЕЩЕ ПРИДЕТСЯ ВЫТАЩИТЬ ИЗ РЕДИРЕКТ УРЛА
-	// REFERRER, ЧТОБЫ СДЕЛАТЬ ИЗ НЕГО НОВЫЙ DOMAIN
-	client.SetAccountDomain("getmetrics.amocrm.ru")
-
-	// Use the authorization code that is pushed to the redirect
-	// URL. Exchange will do the handshake to retrieve the
-	// initial access token. The HTTP Client returned by
-	// conf.Client will refresh the token as necessary.
-	var code string
-	if _, err := fmt.Scan(&code); err != nil {
-		log.Fatal(err)
-	}
-
-	token, err := client.AccessTokenByCode(ctx, code)
-	if err != nil {
-		fmt.Println("error: ", err)
-	}
-
-	fmt.Printf("token: %+v", *token)
 }
