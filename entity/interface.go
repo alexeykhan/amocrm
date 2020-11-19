@@ -18,38 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package account
+package entity
 
 import (
 	"net/http"
 )
 
-const (
-	uuid             = "uuid"
-	version          = "version"
-	amojoID          = "amojo_id"
-	taskTypes        = "task_types"
-	userGroups       = "users_groups"
-	amojoRights      = "amojo_rights"
-	datetimeSettings = "datetime_settings"
-)
-
-type Entity struct {
-
-}
-
-func Relations() []string {
-	return []string{
-		amojoID,
-		uuid,
-		amojoRights,
-		userGroups,
-		taskTypes,
-		version,
-		datetimeSettings,
-	}
-}
-
-func FromResponse(resp *http.Response) (*Entity, error) {
-	return nil, nil
+type Entity interface {
+	Relations() []string
+	NewFromResponse(resp *http.Response) error
 }
