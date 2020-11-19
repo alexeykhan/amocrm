@@ -43,6 +43,7 @@ func ExampleOAuth2_AuthorizeURL() {
 	// Redirect user to authorization URL.
 	// Example: https://www.amocrm.ru/oauth?client_id=CLIENT_ID&state=GENERATED_STATE&mode=post_message
 	url, _ := client.AuthorizeURL(state, oauth2.PostMessageMode)
+
 	fmt.Println("Redirect user to this URL:", url)
 }
 
@@ -72,8 +73,8 @@ func ExampleOAuth2_AccessTokenByCode() {
 		return
 	}
 
-	fmt.Printf("access_token: %s", (*token).AccessToken())
-	fmt.Printf("refresh_token: %s", (*token).RefreshToken())
-	fmt.Printf("expires_at: %v", (*token).ExpiresAt())
-	fmt.Printf("is_valid: %t", (*token).Valid())
+	fmt.Printf("access_token: %s", token.AccessToken())
+	fmt.Printf("refresh_token: %s", token.RefreshToken())
+	fmt.Printf("expires_at: %v", token.ExpiresAt())
+	fmt.Printf("expired: %t", token.Expired())
 }
