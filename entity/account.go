@@ -20,11 +20,6 @@
 
 package entity
 
-import (
-	"errors"
-	"net/http"
-)
-
 const (
 	uuid             = "uuid"
 	version          = "version"
@@ -71,15 +66,4 @@ func (a *Account) Relations() []string {
 		datetimeSettings,
 	}
 }
-
-func (a *Account) NewFromResponse(resp *http.Response) error {
-	if a == nil {
-		return errors.New("nil account receiver")
-	}
-
-	a.Name = "name"
-
-	return nil
-}
-
 
