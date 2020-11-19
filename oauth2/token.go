@@ -48,31 +48,48 @@ type tokenJSON struct {
 	ExpiresIn    int32  `json:"expires_in"`
 }
 
-type TokenSource interface {
+type Token interface {
 	AccessToken() string
 	RefreshToken() string
 	ExpiresAt() time.Time
+	Expired() bool
 	Type() string
-	Valid() bool
 }
 
-type Token struct {
+type TokenSource struct {
 	accessToken  string
 	refreshToken string
 	tokenType    string
 	expiresAt    time.Time
 }
 
+func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) *TokenSource {
+	return &TokenSource{
+		accessToken:  accessToken,
+		refreshToken: refreshToken,
+		tokenType:    tokenType,
+		expiresAt:    expiresAt,
+	}
+}
+
 // AccessToken returns the token that authorizes and
 // authenticates the requests.
-func (t Token) AccessToken() string {
+func (t *TokenSource) AccessToken() string {
+	if t == nil {
+		return ""
+	}
+
 	return t.accessToken
 }
 
 // RefreshToken returns a token that's used by the application
 // (as opposed to the user) to refresh the access token
 // if it expires.
-func (t Token) RefreshToken() string {
+func (t *TokenSource) RefreshToken() string {
+	if t == nil {
+		return ""
+	}
+
 	return t.refreshToken
 }
 
@@ -81,12 +98,20 @@ func (t Token) RefreshToken() string {
 // If zero, TokenSource implementations will reuse the same
 // token forever and RefreshToken or equivalent
 // mechanisms for that TokenSource will not be used.
-func (t Token) ExpiresAt() time.Time {
+func (t *TokenSource) ExpiresAt() time.Time {
+	if t == nil {
+		return time.Now().Add(-expiryDelta)
+	}
+
 	return t.expiresAt
 }
 
 // TokenType returns either this or "Bearer", the default.
-func (t Token) Type() string {
+func (t *TokenSource) Type() string {
+	if t == nil {
+		return ""
+	}
+
 	if strings.EqualFold(t.tokenType, "bearer") {
 		return bearer
 	}
@@ -102,12 +127,20 @@ func (t Token) Type() string {
 	return bearer
 }
 
-// Valid reports whether t has an AccessToken, and is not expired.
-func (t Token) Valid() bool {
-	return t.accessToken != "" && !t.expired()
+// Expired reports whether t has no AccessToken or is expired.
+func (t *TokenSource) Expired() bool {
+	if t.expiresAt.IsZero() {
+		return false
+	}
+
+	if t.accessToken == "" {
+		return true
+	}
+
+	return t.expiresAt.Round(0).Add(-expiryDelta).After(timeNow())
 }
 
-func (t Token) expired() bool {
+func (t *TokenSource) expired() bool {
 	if t.expiresAt.IsZero() {
 		return false
 	}

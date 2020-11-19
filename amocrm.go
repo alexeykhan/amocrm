@@ -21,26 +21,74 @@
 package amocrm
 
 import (
+	"errors"
+
 	"github.com/alexeykhan/amocrm/oauth2"
+	"github.com/alexeykhan/amocrm/repository/account"
 )
 
 type Client interface {
-	OAuth2Client() oauth2.Client
+	Account() (*account.Resource, error)
+	SetToken(token oauth2.Token) Client
 }
 
 // Verify interface compliance.
-var _ Client = (*APIClient)(nil)
+var _ Client = (*API)(nil)
 
-type APIClient struct {
-	oAuth2Client oauth2.Client
+type API struct {
+	auth  *oauth2.AuthClient
+	token *oauth2.TokenSource
 }
 
-func (c APIClient) OAuth2Client() oauth2.Client {
-	return c.oAuth2Client
-}
-
-func New(clientID, clientSecret, redirectURL string) APIClient {
-	return APIClient{
-		oAuth2Client: oauth2.New(clientID, clientSecret, redirectURL),
+func New(clientID, clientSecret, redirectURL string) *API {
+	return &API{
+		auth: oauth2.New(clientID, clientSecret, redirectURL),
 	}
+}
+
+func (a *API) AuthorizeURL(state, mode string) (string, error) {
+	redirectMode, err := oauth2.NewRedirectMode(mode)
+	if err != nil {
+		return "", err
+	}
+
+	a.auth.SetRedirectMode(*redirectMode)
+
+	return a.auth.AuthorizeURL(state)
+}
+
+func (a *API) AccessTokenByCode(domain, code string) (oauth2.Token, error) {
+	accountDomain, err := oauth2.NewDomain(domain)
+	if err != nil {
+		return nil, err
+	}
+
+	a.auth.SetDomain(*accountDomain)
+
+	return a.auth.AccessTokenByCode(code)
+}
+
+func (a *API) SetToken(token oauth2.Token) Client {
+	a.auth.SetToken(token)
+}
+
+func (a *API) Account() (*account.Resource, error) {
+	return nil, nil
+}
+
+func (a *API) refreshAccessToken() error {
+	if a.token == nil {
+		return errors.New("token is not set")
+	}
+	if a.token.RefreshToken() == "" {
+		return errors.New("empty refresh token")
+	}
+
+	token, err := a.auth.AccessTokenByRefreshToken(a.token.RefreshToken())
+	if err != nil {
+		return err
+	}
+
+	a.SetToken(token)
+	return nil
 }

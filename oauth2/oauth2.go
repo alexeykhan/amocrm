@@ -21,9 +21,6 @@
 package oauth2
 
 import (
-	"bytes"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,100 +31,135 @@ import (
 	"time"
 )
 
-type RedirectMode string
-
-func (m RedirectMode) String() string {
-	return string(m)
-}
-
-const (
-	PostMessageMode RedirectMode = "post_message"
-	PopupMode       RedirectMode = "popup"
-)
-
 const (
 	defaultTimeout = 15 * time.Second
 	protocol       = "https://"
 )
 
-func GenerateState() string {
-	// Converting bytes to hex will always double length. Hence, we can reduce
-	// the amount of bytes by half to produce the correct length of 32 characters.
-	key := make([]byte, 16)
-
-	// https://golang.org/pkg/math/rand/#Rand.Read
-	// Ignore errors as it always returns a nil error.
-	_, _ = rand.Read(key)
-
-	return hex.EncodeToString(key)
-}
-
 type Client interface {
-	AuthorizeURL(state string, mode RedirectMode) (string, error)
-	AccessTokenByCode(code string) (*Token, error)
+	AccountURL() string
+	AuthorizeURL(state string) (string, error)
 
-	SetDomain(domain string) Client
+	AccessTokenByCode(code string) (*TokenSource, error)
+	AccessTokenByRefreshToken(refreshToken string) (*TokenSource, error)
+
+	SetRedirectMode(mode RedirectMode) Client
+	SetDomain(domain Domain) Client
+	SetToken(token Token) Client
 }
 
 // Verify interface compliance.
-var _ Client = (*AmoCRMClient)(nil)
+var _ Client = (*AuthClient)(nil)
 
-type AmoCRMClient struct {
+type AuthClient struct {
 	clientID     string
 	clientSecret string
 	redirectURL  string
 
+	domain       Domain
+	redirectMode RedirectMode
+
 	tokenURL *string
+	token    *TokenSource
 }
 
-func New(clientID, clientSecret, redirectURL string) Client {
-	return &AmoCRMClient{
+func New(clientID, clientSecret, redirectURL string) *AuthClient {
+	return &AuthClient{
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		redirectURL:  redirectURL,
+		redirectMode: RedirectMode{
+			value: PostMessageMode,
+		},
+		domain: Domain{
+			account: "www",
+			zone:    "ru",
+		},
 	}
 }
 
-func (c *AmoCRMClient) SetDomain(domain string) Client {
-	tokenURL := protocol + domain + "/oauth2/access_token"
-	c.tokenURL = &tokenURL
-	return c
+func (a *AuthClient) SetRedirectMode(mode RedirectMode) Client {
+	a.redirectMode = mode
+	return a
+}
+
+func (a *AuthClient) SetDomain(domain Domain) Client {
+	tokenURL := protocol + domain.String() + "/oauth2/access_token"
+	a.tokenURL = &tokenURL
+	a.domain = domain
+	return a
+}
+
+func (a *AuthClient) SetToken(token Token) Client {
+	a.token = &TokenSource{
+		tokenType:    token.Type(),
+		accessToken:  token.AccessToken(),
+		refreshToken: token.RefreshToken(),
+		expiresAt:    token.ExpiresAt(),
+	}
+	return a
+}
+
+func (a *AuthClient) AccountURL() string {
+	return protocol + a.domain.String() + "/"
 }
 
 // AuthorizeURL returns a URL of consent page to ask for permissions.
-func (c *AmoCRMClient) AuthorizeURL(state string, mode RedirectMode) (string, error) {
+func (a *AuthClient) AuthorizeURL(state string) (string, error) {
 	if state == "" {
 		return "", oauth2Err("state must not be empty")
 	}
 
-	data := url.Values{
+	query := url.Values{
 		"state":     []string{state},
-		"client_id": []string{c.clientID},
-		"mode":      []string{mode.String()},
+		"client_id": []string{a.clientID},
+		"mode":      []string{a.redirectMode.value},
 	}.Encode()
 
-	var buf bytes.Buffer
-	buf.WriteString("https://www.amocrm.ru/oauth?")
-	buf.WriteString(data)
-	return buf.String(), nil
+	authURL := protocol + a.domain.String() + "/oauth?" + query
+
+	return authURL, nil
 }
 
-func (c *AmoCRMClient) AccessTokenByCode(code string) (*Token, error) {
-	if c.tokenURL == nil {
+func (a *AuthClient) AccessTokenByCode(code string) (*TokenSource, error) {
+	return a.accessToken(AuthorizationCodeGrant(), url.Values{
+		"code":       []string{code},
+		"grant_type": []string{"authorization_code"},
+	})
+}
+
+func (a *AuthClient) AccessTokenByRefreshToken(refreshToken string) (*TokenSource, error) {
+	return a.accessToken(RefreshTokenGrant(), url.Values{
+		"grant_type":    []string{"refresh_token"},
+		"refresh_token": []string{refreshToken},
+	})
+}
+
+func (a *AuthClient) accessToken(grant GrantType, options url.Values) (*TokenSource, error) {
+	if a.tokenURL == nil {
 		return nil, oauth2Err("account domain is not set")
 	}
 
+	if err := verifyGrantParameters(grant, options); err != nil {
+		return nil, oauth2Err("verify grant parameters: %w", err)
+	}
+
 	data := url.Values{
-		"code":          []string{code},
-		"client_id":     []string{c.clientID},
-		"client_secret": []string{c.clientSecret},
-		"redirect_uri":  []string{c.redirectURL},
-		"grant_type":    []string{"authorization_code"},
+		"client_id":     []string{a.clientID},
+		"client_secret": []string{a.clientSecret},
+		"redirect_uri":  []string{a.redirectURL},
+		"grant_type":    []string{grant.Name()},
+	}
+
+	for k, v := range options {
+		if _, reserved := data[k]; !reserved {
+			data[k] = v
+		}
 	}
 
 	reqBody := strings.NewReader(data.Encode())
 
-	req, err := http.NewRequest("POST", *c.tokenURL, reqBody)
+	req, err := http.NewRequest("POST", *a.tokenURL, reqBody)
 	if err != nil {
 		return nil, oauth2Err("build request")
 	}
@@ -160,7 +192,7 @@ func (c *AmoCRMClient) AccessTokenByCode(code string) (*Token, error) {
 		return nil, oauth2Err("parse token from json")
 	}
 
-	token := &Token{
+	token := &TokenSource{
 		accessToken:  jsonToken.AccessToken,
 		tokenType:    jsonToken.TokenType,
 		refreshToken: jsonToken.RefreshToken,
@@ -172,6 +204,16 @@ func (c *AmoCRMClient) AccessTokenByCode(code string) (*Token, error) {
 	}
 
 	return token, nil
+}
+
+func verifyGrantParameters(grant GrantType, options url.Values) error {
+	for _, key := range grant.Parameters() {
+		if values, ok := options[key]; len(values) == 0 || !ok {
+			return fmt.Errorf("missing required %s grant parameter %s", grant.Name(), key)
+		}
+	}
+
+	return nil
 }
 
 func oauth2Err(format string, args ...interface{}) error {
