@@ -18,53 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Copyright (c) 2020 Alexey Khan
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
-// Copyright (c) 2020 Alexey Khan
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
 package amocrm_test
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/alexeykhan/amocrm/client"
+	"github.com/alexeykhan/amocrm"
 )
 
 var (
@@ -88,18 +48,18 @@ var (
 		accessToken:  "access_token",
 		refreshToken: "refresh_token",
 		tokenType:    "bearer",
-		expiresAt:    time.Unix(1605898515, 0),
+		expiresAt:    time.Now(),
 	}
 )
 
 func Example_getAuthURL() {
 	// Initialize amoCRM API Client.
-	amoCRM := client.New(env.clientID, env.clientSecret, env.redirectURL)
+	amoCRM := amocrm.New(env.clientID, env.clientSecret, env.redirectURL)
 
 	// Save this random state as a session identifier to verify
 	// user identity when they are redirected back with code.
 	// Set required mode parameter: "post_message" or "popup".
-	state := client.RandomState()
+	state := amocrm.RandomState()
 	mode := "post_message"
 
 	// Redirect user to authorization URL.
@@ -115,7 +75,7 @@ func Example_getAuthURL() {
 
 func Example_getTokenByCode() {
 	// Initialize amoCRM API Client.
-	amoCRM := client.New(env.clientID, env.clientSecret, env.redirectURL)
+	amoCRM := amocrm.New(env.clientID, env.clientSecret, env.redirectURL)
 
 	// Use the account domain and authorization code that are
 	// pushed to the redirect URL as "referer" and "code GET
@@ -146,7 +106,7 @@ func Example_getTokenByCode() {
 
 func Example_getCurrentAccount() {
 	// Initialize amoCRM API Client.
-	amoCRM := client.New(env.clientID, env.clientSecret, env.redirectURL)
+	amoCRM := amocrm.New(env.clientID, env.clientSecret, env.redirectURL)
 
 	// Retrieve domain from storage.
 	if err := amoCRM.SetDomain(storage.domain); err != nil {
@@ -155,7 +115,7 @@ func Example_getCurrentAccount() {
 	}
 
 	// Retrieve token from storage.
-	token := client.NewToken(storage.accessToken, storage.refreshToken, storage.tokenType, storage.expiresAt)
+	token := amocrm.NewToken(storage.accessToken, storage.refreshToken, storage.tokenType, storage.expiresAt)
 	if err := amoCRM.SetToken(token); err != nil {
 		fmt.Println("set token:", err)
 		return

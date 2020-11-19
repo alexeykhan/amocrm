@@ -20,11 +20,6 @@
 
 package entity
 
-import (
-	"net/http"
-)
-
 type Entity interface {
 	Relations() []string
-	NewFromResponse(resp *http.Response) error
 }
