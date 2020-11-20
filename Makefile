@@ -17,7 +17,7 @@ lint: $(GOLINT)
 	@echo "# Checking license headers ..."
 	@bash $(CHECKLICENSE) | tee $(LINTER_LOGS)
 	@echo "# Checking code with linters ..."
-	@$(LINTER_BIN) run --config=.golangci.yaml --new-from-rev=origin/master ./... | tee $(LINTER_LOGS)
+	@$(LINTER_BIN) run --config=.golangci.yaml ./... | tee $(LINTER_LOGS)
 	@[ ! -s $(LINTER_LOGS) ]
 
 $(GOLINT):
