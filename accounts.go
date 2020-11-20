@@ -21,38 +21,44 @@
 package amocrm
 
 import (
-	"strings"
+	"encoding/json"
+	"fmt"
+	"net/url"
+
+	"github.com/alexeykhan/amocrm/entity"
 )
 
-func isValidMode(name string) bool {
-	switch name {
-	case PostMessageMode, PopupMode:
-		return true
-	}
-	return false
+// Account describes methods available for Accounts entity.
+type Account interface {
+	Current() (*entity.Account, error)
 }
 
-func isValidZone(zone string) bool {
-	switch zone {
-	case "ru", "com":
-		return true
-	}
-	return false
+type account struct {
+	api *api
 }
 
-func isValidDomain(domain string) bool {
-	if domain == "" {
-		return false
+// Current returns an Accounts entity for current authorized user.
+func (r account) Current() (res *entity.Account, err error) {
+	res = &entity.Account{}
+
+	query := url.Values{}
+	for _, with := range res.Relations() {
+		query.Add("with", with)
 	}
 
-	parts := strings.Split(domain, ".")
-	if len(parts) != 3 ||
-		parts[0] == "" ||
-		parts[1] != "amocrm" ||
-		!isValidZone(parts[2]) ||
-		len(parts[0]) > 63 {
-		return false
+	resp, rErr := r.api.get(accountEndpoint, query, nil)
+	if rErr != nil {
+		return res, fmt.Errorf("get account: %w", rErr)
+	}
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			err = fmt.Errorf("close response body: %w", err)
+		}
+	}()
+
+	if dErr := json.NewDecoder(resp.Body).Decode(res); dErr != nil {
+		return res, fmt.Errorf("decode response json: %w", dErr)
 	}
 
-	return true
+	return
 }

@@ -40,8 +40,8 @@ User grants access to their account and is redirected back to
 ```go
 amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
 
-state := amocrm.RandomState() // you can set your own state
-mode := "post_message"        // options: "post_message", "popup"
+state := amocrm.RandomState()  // store this state as a session identifier
+mode := amocrm.PostMessageMode // options: PostMessageMode, PopupMode
 
 authURL, err := amoCRM.AuthorizeURL(state, mode)
 if err != nil {
@@ -75,7 +75,7 @@ if err != nil {
 
 fmt.Println("access_token:", token.AccessToken())
 fmt.Println("refresh_token:", token.RefreshToken())
-fmt.Println("token_type:", token.Type())
+fmt.Println("token_type:", token.TokenType())
 fmt.Println("expires_at:", token.ExpiresAt().Unix())
 ```
 
@@ -97,7 +97,7 @@ if err := amoCRM.SetToken(token); err != nil {
     return
 }
 
-account, err := amoCRM.Account().Current()
+account, err := amoCRM.Accounts().Current()
 if err != nil {
     fmt.Println("fetch current account:", err)
     return

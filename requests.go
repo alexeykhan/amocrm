@@ -21,41 +21,27 @@
 package amocrm
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 )
 
-type endpoint string
-
-func (e endpoint) isValid() bool {
-	switch e {
-	case AccountEndpoint, LeadsEndpoint:
-		return true
-	}
-	return false
-}
-
-func (e endpoint) path() string {
-	return fmt.Sprintf("/api/v%d/%s", Version, e)
-}
-
 const (
-	Version        = uint8(4)
-	UserAgent      = "AmoCRM-API-Golang-Client"
-	RequestTimeout = 20 * time.Second
+	userAgent      = "AmoCRM-API-Golang-Client"
+	apiVersion     = uint8(4)
+	requestTimeout = 20 * time.Second
 
-	AccountEndpoint endpoint = "account"
-	LeadsEndpoint   endpoint = "leads"
+	accountEndpoint endpoint = "account"
 )
 
-func (a *api) get(ep endpoint, q url.Values, h http.Header) (*http.Response, error) {
-	if !ep.isValid() {
-		return nil, errors.New("unexpected endpoint")
-	}
+type endpoint string
 
+func (e endpoint) path() string {
+	return fmt.Sprintf("/api/v%d/%s", apiVersion, e)
+}
+
+func (a *api) get(ep endpoint, q url.Values, h http.Header) (*http.Response, error) {
 	if a.token.Expired() {
 		if err := a.refreshToken(); err != nil {
 			return nil, err
@@ -82,8 +68,8 @@ func (a *api) get(ep endpoint, q url.Values, h http.Header) (*http.Response, err
 }
 
 func (a *api) url(path string, q url.Values) (*url.URL, error) {
-	if err := a.domainIsSet(); err != nil {
-		return nil, err
+	if !isValidDomain(a.domain) {
+		return nil, oauth2Err("invalid account domain")
 	}
 
 	endpointURL := "https://" + a.domain + path + "?" + q.Encode()
@@ -92,7 +78,7 @@ func (a *api) url(path string, q url.Values) (*url.URL, error) {
 }
 
 func (a *api) header() http.Header {
-	authHeader := a.token.Type() + " " + a.token.AccessToken()
+	authHeader := a.token.TokenType() + " " + a.token.AccessToken()
 
 	header := a.baseHeader()
 	header["Authorization"] = []string{authHeader}
@@ -102,6 +88,6 @@ func (a *api) header() http.Header {
 
 func (a *api) baseHeader() http.Header {
 	return http.Header{
-		"User-Agent": []string{UserAgent},
+		"User-Agent": []string{userAgent},
 	}
 }

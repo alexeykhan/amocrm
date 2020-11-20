@@ -30,6 +30,7 @@ const (
 	datetimeSettings = "datetime_settings"
 )
 
+// Account represents amoCRM Account entity json DTO.
 type Account struct {
 	ID                      int    `json:"id"`
 	Name                    string `json:"name"`
@@ -48,13 +49,44 @@ type Account struct {
 	IsHelpbotEnabled        bool   `json:"is_helpbot_enabled"`
 	IsTechnicalAccount      bool   `json:"is_technical_account"`
 	ContactNameDisplayOrder int    `json:"contact_name_display_order"`
+	AmojoID                 string `json:"amojo_id"`
+	UUID                    string `json:"uuid"`
+	Version                 int    `json:"version"`
 	Links                   struct {
 		Self struct {
 			Href string `json:"href"`
 		} `json:"self"`
 	} `json:"_links"`
+	Embedded struct {
+		AmojoRights struct {
+			CanDirect       bool `json:"can_direct"`
+			CanCreateGroups bool `json:"can_create_groups"`
+		} `json:"amojo_rights"`
+		UsersGroups []struct {
+			ID   int         `json:"id"`
+			Name string      `json:"name"`
+			UUID interface{} `json:"uuid"`
+		} `json:"users_groups"`
+		TaskTypes []struct {
+			ID     int         `json:"id"`
+			Name   string      `json:"name"`
+			Color  interface{} `json:"color"`
+			IconID interface{} `json:"icon_id"`
+			Code   string      `json:"code"`
+		} `json:"task_types"`
+		DatetimeSettings struct {
+			DatePattern      string `json:"date_pattern"`
+			ShortDatePattern string `json:"short_date_pattern"`
+			ShortTimePattern string `json:"short_time_pattern"`
+			DateFormat       string `json:"date_format"`
+			TimeFormat       string `json:"time_format"`
+			Timezone         string `json:"timezone"`
+			TimezoneOffset   string `json:"timezone_offset"`
+		} `json:"datetime_settings"`
+	} `json:"_embedded"`
 }
 
+// Relations returns a slice with related entity keys.
 func (a *Account) Relations() []string {
 	return []string{
 		amojoID,

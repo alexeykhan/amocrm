@@ -20,6 +20,7 @@
 
 package entity
 
+// Entity describes common amoCRM entities methods.
 type Entity interface {
 	Relations() []string
 }

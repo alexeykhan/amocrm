@@ -28,36 +28,44 @@ import (
 	"net/url"
 )
 
-// type Client interface {
-// 	Account() (*account.Resource, error)
-// 	AuthorizeURL(state, mode string) (string, error)
-// 	AccessTokenByCode(domain, code string) (oauth2.Token, error)
-// }
+// Client describes an interface for interacting with amoCRM API.
+type Client interface {
+	AuthorizeURL(state, mode string) (*url.URL, error)
+	TokenByCode(code string) (*TokenSource, error)
 
-// Verify interface compliance.
-// var _ Client = (*AmoCRM)(nil)
+	SetToken(token *TokenSource) error
+	SetDomain(domain string) error
 
-var (
-	ErrAccountDomainNotSet = errors.New("account domain is not set")
-)
-
-type AmoCRM struct {
-	api *api
+	Accounts() Account
 }
 
-func New(clientID, clientSecret, redirectURL string) *AmoCRM {
-	return &AmoCRM{
-		api: &api{
-			clientID:     clientID,
-			clientSecret: clientSecret,
-			redirectURL:  redirectURL,
-			http: &http.Client{
-				Timeout: RequestTimeout,
-			},
+// Verify interface compliance.
+var _ Client = (*api)(nil)
+
+// api implements Client interface.
+type api struct {
+	clientID     string
+	clientSecret string
+	redirectURL  string
+	domain       string
+
+	token *TokenSource
+	http  *http.Client
+}
+
+// New allocates and returns a new amoCRM API Client.
+func New(clientID, clientSecret, redirectURL string) Client {
+	return &api{
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		redirectURL:  redirectURL,
+		http: &http.Client{
+			Timeout: requestTimeout,
 		},
 	}
 }
 
+// RandomState generates a new random state.
 func RandomState() string {
 	// Converting bytes to hex will always double length. Hence, we can reduce
 	// the amount of bytes by half to produce the correct length of 32 characters.
@@ -70,38 +78,44 @@ func RandomState() string {
 	return hex.EncodeToString(key)
 }
 
-func (a *AmoCRM) AuthorizeURL(state, mode string) (*url.URL, error) {
-	return a.api.authorizeURL(state, mode)
+// AuthorizeURL returns a URL of page to ask for permissions.
+func (a *api) AuthorizeURL(state, mode string) (*url.URL, error) {
+	return a.authorizeURL(state, mode)
 }
 
-func (a *AmoCRM) SetToken(token *TokenSource) error {
+// SetToken stores given token to sign API requests.
+func (a *api) SetToken(token *TokenSource) error {
 	if token == nil {
 		return errors.New("invalid token")
 	}
 
-	a.api.token = token
+	a.token = token
 	return nil
 }
 
-func (a *AmoCRM) SetDomain(domain string) error {
+// SetToken stores given domain to build account-specific API endpoints.
+func (a *api) SetDomain(domain string) error {
 	if !isValidDomain(domain) {
 		return errors.New("invalid domain")
 	}
 
-	a.api.domain = domain
+	a.domain = domain
 	return nil
 }
 
-func (a *AmoCRM) TokenByCode(code string) (*TokenSource, error) {
+// TokenByCode makes a handshake with amoCRM, exchanging given
+// authorization code for a set of tokens.
+func (a *api) TokenByCode(code string) (*TokenSource, error) {
 	if code == "" {
 		return nil, errors.New("empty authorization code")
 	}
 
-	return a.api.accessTokenByCode(code)
+	return a.accessTokenByCode(code)
 }
 
-func (a *AmoCRM) Account() AccountResource {
+// Accounts returns an Account.
+func (a *api) Accounts() Account {
 	return account{
-		api: a.api,
+		api: a,
 	}
 }
