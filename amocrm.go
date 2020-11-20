@@ -31,12 +31,12 @@ import (
 // Client describes an interface for interacting with amoCRM API.
 type Client interface {
 	AuthorizeURL(state, mode string) (*url.URL, error)
-	TokenByCode(code string) (*TokenSource, error)
+	TokenByCode(code string) (Token, error)
 
-	SetToken(token *TokenSource) error
+	SetToken(token Token) error
 	SetDomain(domain string) error
 
-	Accounts() Account
+	Accounts() AccountsRepository
 }
 
 // Verify interface compliance.
@@ -49,7 +49,7 @@ type api struct {
 	redirectURL  string
 	domain       string
 
-	token *TokenSource
+	token Token
 	http  *http.Client
 }
 
@@ -84,7 +84,7 @@ func (a *api) AuthorizeURL(state, mode string) (*url.URL, error) {
 }
 
 // SetToken stores given token to sign API requests.
-func (a *api) SetToken(token *TokenSource) error {
+func (a *api) SetToken(token Token) error {
 	if token == nil {
 		return errors.New("invalid token")
 	}
@@ -93,7 +93,7 @@ func (a *api) SetToken(token *TokenSource) error {
 	return nil
 }
 
-// SetToken stores given domain to build account-specific API endpoints.
+// SetToken stores given domain to build accounts-specific API endpoints.
 func (a *api) SetDomain(domain string) error {
 	if !isValidDomain(domain) {
 		return errors.New("invalid domain")
@@ -105,7 +105,7 @@ func (a *api) SetDomain(domain string) error {
 
 // TokenByCode makes a handshake with amoCRM, exchanging given
 // authorization code for a set of tokens.
-func (a *api) TokenByCode(code string) (*TokenSource, error) {
+func (a *api) TokenByCode(code string) (Token, error) {
 	if code == "" {
 		return nil, errors.New("empty authorization code")
 	}
@@ -114,8 +114,8 @@ func (a *api) TokenByCode(code string) (*TokenSource, error) {
 }
 
 // Accounts returns an Account.
-func (a *api) Accounts() Account {
-	return account{
+func (a *api) Accounts() AccountsRepository {
+	return accounts{
 		api: a,
 	}
 }

@@ -57,23 +57,23 @@ func (a *api) authorizeURL(state, mode string) (*url.URL, error) {
 	return url.Parse(authURL)
 }
 
-func (a *api) accessTokenByCode(code string) (*TokenSource, error) {
+func (a *api) accessTokenByCode(code string) (Token, error) {
 	return a.accessToken(authorizationCodeGrant(), url.Values{
 		"code":       []string{code},
 		"grant_type": []string{"authorization_code"},
 	}, nil)
 }
 
-func (a *api) accessTokenByRefreshToken(refreshToken string) (*TokenSource, error) {
+func (a *api) accessTokenByRefreshToken(refreshToken string) (Token, error) {
 	return a.accessToken(refreshTokenGrant(), url.Values{
 		"grant_type":    []string{"refresh_token"},
 		"refresh_token": []string{refreshToken},
 	}, nil)
 }
 
-func (a *api) accessToken(grant grantType, options url.Values, header http.Header) (*TokenSource, error) {
+func (a *api) accessToken(grant grantType, options url.Values, header http.Header) (Token, error) {
 	if !isValidDomain(a.domain) {
-		return nil, oauth2Err("invalid account domain")
+		return nil, oauth2Err("invalid accounts domain")
 	}
 
 	// Validate required grantType-specific fields
@@ -146,7 +146,7 @@ func (a *api) accessToken(grant grantType, options url.Values, header http.Heade
 		return nil, oauth2Err("parse token from json")
 	}
 
-	token := &TokenSource{
+	token := &tokenSource{
 		accessToken:  jsonToken.AccessToken,
 		tokenType:    jsonToken.TokenType,
 		refreshToken: jsonToken.RefreshToken,

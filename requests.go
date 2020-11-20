@@ -32,7 +32,7 @@ const (
 	apiVersion     = uint8(4)
 	requestTimeout = 20 * time.Second
 
-	accountEndpoint endpoint = "account"
+	accountEndpoint endpoint = "accounts"
 )
 
 type endpoint string
@@ -69,7 +69,7 @@ func (a *api) get(ep endpoint, q url.Values, h http.Header) (*http.Response, err
 
 func (a *api) url(path string, q url.Values) (*url.URL, error) {
 	if !isValidDomain(a.domain) {
-		return nil, oauth2Err("invalid account domain")
+		return nil, oauth2Err("invalid accounts domain")
 	}
 
 	endpointURL := "https://" + a.domain + path + "?" + q.Encode()
