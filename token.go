@@ -51,8 +51,8 @@ type tokenJSON struct {
 	ExpiresIn    int32  `json:"expires_in"`
 }
 
-// TokenSource implements Token interface.
-type TokenSource struct {
+// tokenSource implements Token interface.
+type tokenSource struct {
 	accessToken  string
 	refreshToken string
 	tokenType    string
@@ -60,8 +60,8 @@ type TokenSource struct {
 }
 
 // NewToken allocates and returns a new TokenSource.
-func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) *TokenSource {
-	return &TokenSource{
+func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) Token {
+	return &tokenSource{
 		accessToken:  accessToken,
 		refreshToken: refreshToken,
 		tokenType:    tokenType,
@@ -71,7 +71,7 @@ func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) 
 
 // AccessToken returns the token that authorizes and
 // authenticates the requests.
-func (t *TokenSource) AccessToken() string {
+func (t *tokenSource) AccessToken() string {
 	if t == nil {
 		return ""
 	}
@@ -82,7 +82,7 @@ func (t *TokenSource) AccessToken() string {
 // RefreshToken returns a token that's used by the application
 // (as opposed to the user) to refresh the access token
 // if it expires.
-func (t *TokenSource) RefreshToken() string {
+func (t *tokenSource) RefreshToken() string {
 	if t == nil {
 		return ""
 	}
@@ -95,7 +95,7 @@ func (t *TokenSource) RefreshToken() string {
 // If zero, TokenSource implementations will reuse the same token forever
 // and RefreshToken or equivalent mechanisms for that TokenSource will
 // not be used.
-func (t *TokenSource) ExpiresAt() time.Time {
+func (t *tokenSource) ExpiresAt() time.Time {
 	if t == nil {
 		return time.Now().Add(-expiryDelta)
 	}
@@ -104,7 +104,7 @@ func (t *TokenSource) ExpiresAt() time.Time {
 }
 
 // TokenType returns token type or "Bearer" by default.
-func (t *TokenSource) TokenType() string {
+func (t *tokenSource) TokenType() string {
 	switch {
 	case t == nil:
 		return ""
@@ -120,7 +120,7 @@ func (t *TokenSource) TokenType() string {
 }
 
 // Expired reports whether t has no AccessToken or is expired.
-func (t *TokenSource) Expired() bool {
+func (t *tokenSource) Expired() bool {
 	if t.expiresAt.IsZero() {
 		return false
 	}

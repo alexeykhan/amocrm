@@ -34,7 +34,7 @@ independent and unofficial API. Use at your own risk.
 
 **Step №1: Redirect user to the authorization page.**
 
-User grants access to their account and is redirected back to 
+User grants access to their accounts and is redirected back to 
 `redirect_url` with `referer` and `code` GET-parametetes attached.
 
 ```go
@@ -55,7 +55,7 @@ fmt.Println(authURL)
 
 **Step №2: Exchange authorization code for token.**
 
-Use received `referer` and `code` parameters as account domain and
+Use received `referer` and `code` parameters as accounts domain and
 authorization code respectively to make a handshake with amoCRM and
 get a fresh set of `access_token`, `refresh_token` and token meta data. 
 
@@ -81,7 +81,7 @@ fmt.Println("expires_at:", token.ExpiresAt().Unix())
 
 **Step №3: Make your first API request.**
 
-Set amoCRM account domain and token to authorize your requests.
+Set amoCRM accounts domain and token to authorize your requests.
 
 ```go
 amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
@@ -97,11 +97,11 @@ if err := amoCRM.SetToken(token); err != nil {
     return
 }
 
-account, err := amoCRM.Accounts().Current()
+accounts, err := amoCRM.Accounts().Current()
 if err != nil {
-    fmt.Println("fetch current account:", err)
+    fmt.Println("fetch current accounts:", err)
     return
 }
 
-fmt.Println("current account:", account)
+fmt.Println("current accounts:", accounts)
 ```

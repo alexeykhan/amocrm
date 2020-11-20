@@ -28,17 +28,17 @@ import (
 	"github.com/alexeykhan/amocrm/entity"
 )
 
-// Account describes methods available for Accounts entity.
-type Account interface {
+// AccountsRepository describes methods available for Accounts entity.
+type AccountsRepository interface {
 	Current() (*entity.Account, error)
 }
 
-type account struct {
+type accounts struct {
 	api *api
 }
 
 // Current returns an Accounts entity for current authorized user.
-func (r account) Current() (res *entity.Account, err error) {
+func (r accounts) Current() (res *entity.Account, err error) {
 	res = &entity.Account{}
 
 	query := url.Values{}
@@ -48,7 +48,7 @@ func (r account) Current() (res *entity.Account, err error) {
 
 	resp, rErr := r.api.get(accountEndpoint, query, nil)
 	if rErr != nil {
-		return res, fmt.Errorf("get account: %w", rErr)
+		return res, fmt.Errorf("get accounts: %w", rErr)
 	}
 	defer func() {
 		if err = resp.Body.Close(); err != nil {

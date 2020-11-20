@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package entity implements buffered I/O. It wraps an io.Reader or io.Writer
+// object, creating another object (Reader or Writer) that also implements
+// the interface but provides buffering and some help for textual I/O.
 package entity
 
 const (

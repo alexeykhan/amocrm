@@ -78,14 +78,14 @@ func Example_getTokenByCode() {
 	// Initialize amoCRM API Client.
 	amoCRM := amocrm.New(env.clientID, env.clientSecret, env.redirectURL)
 
-	// Use the account domain and authorization code that are
+	// Use the accounts domain and authorization code that are
 	// pushed to the redirect URL as "referer" and "code GET
 	// parameters respectively. AccessTokenByCode will do the
 	// handshake to retrieve tokens.
 	domain := "example.amocrm.ru"
 	authCode := "def502000ba3e1724cac79...92146f93b70fd4ca31"
 
-	// Set amoCRM API account domain.
+	// Set amoCRM API accounts domain.
 	if err := amoCRM.SetDomain(domain); err != nil {
 		fmt.Println("set domain:", err)
 		return
@@ -122,12 +122,12 @@ func Example_getCurrentAccount() {
 		return
 	}
 
-	// Fetch current account from API.
+	// Fetch current accounts from API.
 	account, err := amoCRM.Accounts().Current()
 	if err != nil {
-		fmt.Println("fetch current account:", err)
+		fmt.Println("fetch current accounts:", err)
 		return
 	}
 
-	fmt.Println("current account:", account)
+	fmt.Println("current accounts:", account)
 }
