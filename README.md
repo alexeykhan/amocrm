@@ -4,12 +4,12 @@
 
 <p>
     <a href="https://pkg.go.dev/github.com/alexeykhan/amocrm">
-        <img src="https://img.shields.io/badge/pkg.go.dev-reference-00ADD8?logo=go&logoColor=white" alt="GoDoc Reference" style="max-width:100%;">
+        <img src="https://img.shields.io/badge/pkg.go.dev-reference-00ADD8?logo=go&logoColor=white" alt="GoDoc Reference">
     </a>
-    <a href="https://pkg.go.dev/github.com/alexeykhan/amocrm">
+    <a href="https://github.com/alexeykhan/amocrm">
         <img src="https://img.shields.io/badge/codecov-98%25-success?logo=codecov&logoColor=white" alt="Code Coverage">
     </a>
-    <a href="https://pkg.go.dev/github.com/alexeykhan/amocrm">
+    <a href="https://github.com/alexeykhan/amocrm">
         <img src="https://img.shields.io/badge/build-passes-success?logo=travis-ci&logoColor=white" alt="Build Status">
     </a>
     <a href="https://pkg.go.dev/github.com/alexeykhan/amocrm">
@@ -18,6 +18,13 @@
 </p> 
 
 This package provides a Golang client for amoCRM API.
+
+
+## Disclaimer
+
+This code is in no way affiliated with, authorized, maintained, sponsored 
+or endorsed by amoCRM or any of its affiliates or subsidiaries. This is an 
+independent and unofficial API. Use at your own risk.
 
 ## Installation
 
