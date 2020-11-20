@@ -24,7 +24,7 @@ This package provides a Golang client for amoCRM API.
 
 This code is in no way affiliated with, authorized, maintained, sponsored 
 or endorsed by amoCRM or any of its affiliates or subsidiaries. This is an 
-independent and unofficial API. Use at your own risk.
+independent and unofficial API client. Use at your own risk.
 
 ## Installation
 
@@ -34,8 +34,8 @@ independent and unofficial API. Use at your own risk.
 
 **Step №1: Redirect user to the authorization page.**
 
-User grants access to their accounts and is redirected back to 
-`redirect_url` with `referer` and `code` GET-parametetes attached.
+User grants access to their account and is redirected back 
+with `referer` and `code` GET-parameters attached.
 
 ```go
 amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
@@ -55,7 +55,7 @@ fmt.Println(authURL)
 
 **Step №2: Exchange authorization code for token.**
 
-Use received `referer` and `code` parameters as accounts domain and
+Use received `referer` and `code` parameters as account domain and
 authorization code respectively to make a handshake with amoCRM and
 get a fresh set of `access_token`, `refresh_token` and token meta data. 
 
