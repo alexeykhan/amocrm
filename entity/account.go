@@ -66,4 +66,3 @@ func (a *Account) Relations() []string {
 		datetimeSettings,
 	}
 }
-

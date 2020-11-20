@@ -53,9 +53,21 @@ linters:
     - varcheck
     - ineffassign
     - typecheck
+    - bodyclose
     - dupl
     - goconst
     - goimports
     - megacheck
     - gosec
+    - godot
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dupl
+  exclude:
+    # _ instead of err checks
+    # - G104
 
