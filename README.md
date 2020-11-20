@@ -25,7 +25,8 @@ This package provides a Golang client for amoCRM API.
 
 ## Quick Start
 
-*Step №1: Redirect user to the authorization page.* 
+**Step №1: Redirect user to the authorization page.**
+
 User grants access to their account and is redirected back to 
 `redirect_url` with `referer` and `code` GET-parametetes attached.
 
@@ -50,7 +51,8 @@ fmt.Println("Redirect user to this URL:")
 fmt.Println(authURL)
 ```
 
-*Step №2: Exchange authorization code for token.* 
+**Step №2: Exchange authorization code for token.**
+
 Use received `referer` and `code` parameters as account domain and
 authorization code respectively to make a handshake with amoCRM and
 get a fresh set of `access_token`, `refresh_token` and token meta data. 
@@ -86,7 +88,8 @@ fmt.Println("token_type:", token.Type())
 fmt.Println("expires_at:", token.ExpiresAt().Unix())
 ```
 
-*Step №3: Make your first request to amoCRM API.* 
+**Step №3: Make your first API request.**
+
 Set amoCRM account domain and token to authorize your requests.
 
 ```go
