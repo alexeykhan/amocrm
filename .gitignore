@@ -1,30 +1,33 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go-specific
-/bin
-/vendor
-/vendor.pb
-
-# IDE
-/.idea
-/.vscode
-
-# OS-specific
+# Folders.
+bin
+logs
+vendor
+vendor.pb
+.idea
+.vscode
 .DS_STORE
 
-# Project Internals
-/bin/
+# Binary and generated files.
+*.o
+*.a
+*.so
+*.exe
+*.exe~
+*.test
+*.prof
+*.pprof
+*.out
+*.log
+*.dll
+*.dylib
+*.cgo1.go
+*.cgo2.c
+
+_testmain.go
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+cover.out
+cover.html
+

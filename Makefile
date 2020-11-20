@@ -1,27 +1,42 @@
 export GO111MODULE=on
 export GOSUMDB=off
 
-.PHONY: linter
-linter:
-	$(info # Installing golangci-lint ...)
-	$ curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin v1.31.0
+BIN := $(CURDIR)/bin
+LINTER_TAG := v1.32.2
+LINTER_BIN := $(BIN)/golangci-lint
+CHECKLICENSE := $(CURDIR)/checklicense.sh
+LOGS_DIR := $(CURDIR)/logs
+TESTS_LOGS := $(LOGS_DIR)/tests.log
+LINTER_LOGS := $(LOGS_DIR)/linter.log
+
+.PHONY: all
+all: lint test
+
+.PHONY: lint
+lint: $(GOLINT)
+	@echo "# Checking license headers ..."
+	@bash $(CHECKLICENSE) | tee $(LINTER_LOGS)
+	@echo "# Checking code with linters ..."
+	@$(LINTER_BIN) run --config=.golangci.yaml --new-from-rev=origin/master ./... | tee $(LINTER_LOGS)
+	@[ ! -s $(LINTER_LOGS) ]
+
+$(GOLINT):
+	@echo "Installing golangci-lint ..."
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin $(LINTER_TAG)
 
 .PHONY: test
 test:
-	$(info # Running app tests ...)
-	$ go test -cover ./...
+	@echo "# Running tests ..."
+	@go test -race ./... | tee $(TESTS_LOGS)
 
-.PHONY: lint
-lint:
-	$(info # Running linter ...)
-	$ ./bin/golangci-lint run --new-from-rev=origin/master --config=.pipeline.yaml --timeout=180s ./...
+.PHONY: cover
+cover:
+	@echo "# Running coverage tests ..."
+	@go test -race -covermode=atomic -coverprofile=cover.out -coverpkg=./... ./...
+	@echo "# See coverage results in ./cover.html file"
+	@go tool cover -html=cover.out -o cover.html
 
 .PHONY: generate
 generate:
-	$(info # Generating stuff ...)
-	$ go generate ./...
-
-# CODE QUALITY
-# https://github.com/codeclimate/codeclimate#packages
-# $ docker pull --quiet "$CODE_QUALITY_IMAGE"
-# registry.gitlab.com/gitlab-org/ci-cd/codequality:0.85.10-gitlab.1
+	@echo "# Generating stuff ..."
+	@go generate ./...
