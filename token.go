@@ -25,19 +25,22 @@ import (
 	"time"
 )
 
+// Token stores a set of AccessToken, RefreshToken and meta data.
+type Token interface {
+	AccessToken() string
+	RefreshToken() string
+	ExpiresAt() time.Time
+	TokenType() string
+	Expired() bool
+}
+
 // expiryDelta determines how earlier a token should be considered
 // expired than its actual expiration time. It is used to avoid late
-// expirations due to client-server time mismatches.
+// expiration due to client-server time mismatches.
 const expiryDelta = 10 * time.Second
 
 // timeNow is time.Now but pulled out as a variable for tests.
 var timeNow = time.Now
-
-var (
-	mac    = "MAC"
-	bearer = "Bearer"
-	basic  = "Basic"
-)
 
 // tokenJSON is the struct representing the HTTP response from OAuth2
 // providers returning a token in JSON form.
@@ -48,6 +51,7 @@ type tokenJSON struct {
 	ExpiresIn    int32  `json:"expires_in"`
 }
 
+// TokenSource implements Token interface.
 type TokenSource struct {
 	accessToken  string
 	refreshToken string
@@ -55,6 +59,7 @@ type TokenSource struct {
 	expiresAt    time.Time
 }
 
+// NewToken allocates and returns a new TokenSource.
 func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) *TokenSource {
 	return &TokenSource{
 		accessToken:  accessToken,
@@ -87,9 +92,9 @@ func (t *TokenSource) RefreshToken() string {
 
 // ExpiresAt returns the optional expiration time of the access token.
 //
-// If zero, TokenSource implementations will reuse the same
-// token forever and RefreshToken or equivalent
-// mechanisms for that TokenSource will not be used.
+// If zero, TokenSource implementations will reuse the same token forever
+// and RefreshToken or equivalent mechanisms for that TokenSource will
+// not be used.
 func (t *TokenSource) ExpiresAt() time.Time {
 	if t == nil {
 		return time.Now().Add(-expiryDelta)
@@ -98,25 +103,20 @@ func (t *TokenSource) ExpiresAt() time.Time {
 	return t.expiresAt
 }
 
-// TokenType returns either this or "Bearer", the default.
-func (t *TokenSource) Type() string {
-	if t == nil {
+// TokenType returns token type or "Bearer" by default.
+func (t *TokenSource) TokenType() string {
+	switch {
+	case t == nil:
 		return ""
-	}
-
-	if strings.EqualFold(t.tokenType, "bearer") {
-		return bearer
-	}
-	if strings.EqualFold(t.tokenType, "mac") {
-		return mac
-	}
-	if strings.EqualFold(t.tokenType, "basic") {
-		return basic
-	}
-	if t.tokenType != "" {
+	case strings.EqualFold(t.tokenType, "bearer"), t.tokenType == "":
+		return "Bearer"
+	case strings.EqualFold(t.tokenType, "mac"):
+		return "MAC"
+	case strings.EqualFold(t.tokenType, "basic"):
+		return "Basic"
+	default:
 		return t.tokenType
 	}
-	return bearer
 }
 
 // Expired reports whether t has no AccessToken or is expired.

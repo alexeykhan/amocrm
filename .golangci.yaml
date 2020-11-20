@@ -67,3 +67,8 @@ issues:
     - path: _test\.go
       linters:
         - dupl
+  exclude:
+    # only for active development mode
+    - should have a package comment, unless it's in another file for this package
+    # for "public interface + private struct implementation" cases only!
+    - exported func * returns unexported type *, which can be annoying to use

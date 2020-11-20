@@ -31,28 +31,18 @@ import (
 	"time"
 )
 
+// PostMessageMode and PopupMode are the only options for
+// amoCRM OAuth2.0 "mode" request parameter.
 const (
 	PostMessageMode = "post_message"
 	PopupMode       = "popup"
 )
 
-type api struct {
-	clientID     string
-	clientSecret string
-	redirectURL  string
-	domain       string
-
-	token *TokenSource
-	http  *http.Client
-}
-
-// authorizeURL returns a URL of page to ask for permissions.
 func (a *api) authorizeURL(state, mode string) (*url.URL, error) {
 	if state == "" {
-		return nil, oauth2Err("state must not be empty")
+		return nil, oauth2Err("empty state")
 	}
-
-	if !isValidMode(mode) {
+	if mode != PostMessageMode && mode != PopupMode {
 		return nil, oauth2Err("unexpected mode")
 	}
 
@@ -82,8 +72,8 @@ func (a *api) accessTokenByRefreshToken(refreshToken string) (*TokenSource, erro
 }
 
 func (a *api) accessToken(grant grantType, options url.Values, header http.Header) (*TokenSource, error) {
-	if err := a.domainIsSet(); err != nil {
-		return nil, err
+	if !isValidDomain(a.domain) {
+		return nil, oauth2Err("invalid account domain")
 	}
 
 	// Validate required grantType-specific fields
@@ -171,10 +161,6 @@ func (a *api) accessToken(grant grantType, options url.Values, header http.Heade
 }
 
 func (a *api) refreshToken() error {
-	if a.token == nil {
-		return oauth2Err("token is not set")
-	}
-
 	if a.token.RefreshToken() == "" {
 		return oauth2Err("empty refresh token")
 	}
@@ -188,12 +174,21 @@ func (a *api) refreshToken() error {
 	return nil
 }
 
-func (a *api) domainIsSet() error {
-	if a.domain == "" {
-		return oauth2Err("account domain is not set")
+func isValidDomain(domain string) bool {
+	if domain == "" {
+		return false
 	}
 
-	return nil
+	parts := strings.Split(domain, ".")
+	if len(parts) != 3 ||
+		parts[0] == "" ||
+		len(parts[0]) > 63 ||
+		parts[1] != "amocrm" ||
+		parts[2] != "ru" && parts[2] != "com" {
+		return false
+	}
+
+	return true
 }
 
 func oauth2Err(format string, args ...interface{}) error {

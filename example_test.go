@@ -45,6 +45,7 @@ var (
 		tokenType    string
 		expiresAt    time.Time
 	}{
+		domain:       "example.amocrm.ru",
 		accessToken:  "access_token",
 		refreshToken: "refresh_token",
 		tokenType:    "bearer",
@@ -60,7 +61,7 @@ func Example_getAuthURL() {
 	// user identity when they are redirected back with code.
 	// Set required mode parameter: "post_message" or "popup".
 	state := amocrm.RandomState()
-	mode := "post_message"
+	mode := amocrm.PostMessageMode
 
 	// Redirect user to authorization URL.
 	authURL, err := amoCRM.AuthorizeURL(state, mode)
@@ -100,7 +101,7 @@ func Example_getTokenByCode() {
 	// Store received token.
 	fmt.Println("access_token:", token.AccessToken())
 	fmt.Println("refresh_token:", token.RefreshToken())
-	fmt.Println("token_type:", token.Type())
+	fmt.Println("token_type:", token.TokenType())
 	fmt.Println("expires_at:", token.ExpiresAt().Unix())
 }
 
@@ -122,7 +123,7 @@ func Example_getCurrentAccount() {
 	}
 
 	// Fetch current account from API.
-	account, err := amoCRM.Account().Current()
+	account, err := amoCRM.Accounts().Current()
 	if err != nil {
 		fmt.Println("fetch current account:", err)
 		return
