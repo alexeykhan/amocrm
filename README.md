@@ -1,4 +1,4 @@
-![Go Package for amoCRM API](.github/logo.png?raw=true)
+![Go Package for amoCRM API](logo.png?raw=true)
 
 # Go Package for amoCRM API 
 
@@ -28,7 +28,7 @@ independent and unofficial API client. Use at your own risk.
 
 ## Installation
 
-`go get -u github.com/alexeykhan/amocrm`
+`go Get -u github.com/alexeykhan/amocrm`
 
 ## Quick Start
 
@@ -45,7 +45,7 @@ mode := amocrm.PostMessageMode // options: PostMessageMode, PopupMode
 
 authURL, err := amoCRM.AuthorizeURL(state, mode)
 if err != nil {
-    fmt.Println("Failed to get auth url:", err)
+    fmt.Println("Failed to Get auth url:", err)
     return
 }
 
@@ -57,7 +57,7 @@ fmt.Println(authURL)
 
 Use received `referer` and `code` parameters as account domain and
 authorization code respectively to make a handshake with amoCRM and
-get a fresh set of `access_token`, `refresh_token` and token meta data. 
+Get a fresh set of `access_token`, `refresh_token` and token meta data. 
 
 ```go
 amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
@@ -69,11 +69,11 @@ if err := amoCRM.SetDomain("example.amocrm.ru"); err != nil {
 
 token, err := amoCRM.TokenByCode(authCode)
 if err != nil {
-    fmt.Println("get token by code:", err)
+    fmt.Println("Get token by code:", err)
     return
 }
 
-fmt.Println("access_token:", token.AccessToken())
+fmt.Println("access_token:", token.GetToken())
 fmt.Println("refresh_token:", token.RefreshToken())
 fmt.Println("token_type:", token.TokenType())
 fmt.Println("expires_at:", token.ExpiresAt().Unix())

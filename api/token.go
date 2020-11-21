@@ -18,14 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package amocrm
+package api
 
 import (
 	"strings"
 	"time"
 )
 
-// Token stores a set of AccessToken, RefreshToken and meta data.
+// GetToken stores a set of GetToken, RefreshToken and meta data.
 type Token interface {
 	AccessToken() string
 	RefreshToken() string
@@ -51,7 +51,7 @@ type tokenJSON struct {
 	ExpiresIn    int32  `json:"expires_in"`
 }
 
-// tokenSource implements Token interface.
+// tokenSource implements GetToken interface.
 type tokenSource struct {
 	accessToken  string
 	refreshToken string
@@ -69,7 +69,7 @@ func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) 
 	}
 }
 
-// AccessToken returns the token that authorizes and
+// GetToken returns the token that authorizes and
 // authenticates the requests.
 func (t *tokenSource) AccessToken() string {
 	if t == nil {
@@ -119,7 +119,7 @@ func (t *tokenSource) TokenType() string {
 	}
 }
 
-// Expired reports whether t has no AccessToken or is expired.
+// Expired reports whether t has no GetToken or is expired.
 func (t *tokenSource) Expired() bool {
 	if t.expiresAt.IsZero() {
 		return false
