@@ -1,3 +1,5 @@
+// The MIT License (MIT)
+//
 // Copyright (c) 2020 Alexey Khan
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,10 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package amocrm
+package api
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,6 +36,20 @@ import (
 	"time"
 )
 
+// Client makes API calls to amoCRM.
+type Client interface {
+	SetToken(token Token) error
+	SetDomain(domain string) error
+	AuthorizationURL(state, mode string) (*url.URL, error)
+	GetToken(grant GrantType, options url.Values, header http.Header) (Token, error)
+	RefreshToken() error
+
+	Get(ep Endpoint, q url.Values, h http.Header) (*http.Response, error)
+}
+
+// Verify interface compliance.
+var _ Client = (*api)(nil)
+
 // PostMessageMode and PopupMode are the only options for
 // amoCRM OAuth2.0 "mode" request parameter.
 const (
@@ -38,7 +57,127 @@ const (
 	PopupMode       = "popup"
 )
 
-func (a *api) authorizeURL(state, mode string) (*url.URL, error) {
+type Endpoint string
+
+func (e Endpoint) path() string {
+	return fmt.Sprintf("/api/v%d/%s", apiVersion, e)
+}
+
+// API Endpoints.
+const (
+	AccountEndpoint Endpoint = "accounts"
+)
+
+type GrantType struct {
+	code   string
+	fields []string
+}
+
+var (
+	AuthorizationCodeGrant = GrantType{
+		code:   "authorization_code",
+		fields: []string{"code"},
+	}
+	RefreshTokenGrant = GrantType{
+		code:   "refresh_token",
+		fields: []string{"refresh_token"},
+	}
+	// clientCredentialsGrant = GrantType{
+	// 	code:   "client_credentials",
+	// 	fields: []string{},
+	// }
+	// passwordGrant = GrantType{
+	// 	code:   "password",
+	// 	fields: []string{"username", "password"},
+	// }
+)
+
+const (
+	userAgent      = "AmoCRM-API-Golang-Client"
+	apiVersion     = uint8(4)
+	requestTimeout = 20 * time.Second
+)
+
+// api implements Client interface.
+type api struct {
+	clientID     string
+	clientSecret string
+	redirectURL  string
+
+	domain string
+	token  Token
+
+	http *http.Client
+}
+
+func New(clientID, clientSecret, redirectURL string) Client {
+	return &api{
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		redirectURL:  redirectURL,
+		http: &http.Client{
+			Timeout: requestTimeout,
+		},
+	}
+}
+
+// RandomState generates a new random state.
+func RandomState() string {
+	// Converting bytes to hex will always double length. Hence, we can reduce
+	// the amount of bytes by half to produce the correct length of 32 characters.
+	key := make([]byte, 16)
+
+	// https://golang.org/pkg/math/rand/#Rand.Read
+	// Ignore errors as it always returns a nil error.
+	_, _ = rand.Read(key)
+
+	return hex.EncodeToString(key)
+}
+
+func (a *api) Get(ep Endpoint, q url.Values, h http.Header) (*http.Response, error) {
+	if a.token.Expired() {
+		if err := a.RefreshToken(); err != nil {
+			return nil, err
+		}
+	}
+
+	header := a.header()
+	for k, v := range h {
+		if _, reserved := header[k]; !reserved {
+			header[k] = v
+		}
+	}
+
+	apiURL, err := a.url(ep.path(), q)
+	if err != nil {
+		return nil, err
+	}
+
+	return a.http.Do(&http.Request{
+		Method: http.MethodGet,
+		Header: header,
+		URL:    apiURL,
+	})
+}
+
+func (a *api) SetToken(token Token) error {
+	if token == nil {
+		return errors.New("invalid token")
+	}
+	a.token = token
+	return nil
+}
+
+func (a *api) SetDomain(domain string) error {
+	if !isValidDomain(domain) {
+		return errors.New("invalid domain")
+	}
+
+	a.domain = domain
+	return nil
+}
+
+func (a *api) AuthorizationURL(state, mode string) (*url.URL, error) {
 	if state == "" {
 		return nil, oauth2Err("empty state")
 	}
@@ -57,21 +196,7 @@ func (a *api) authorizeURL(state, mode string) (*url.URL, error) {
 	return url.Parse(authURL)
 }
 
-func (a *api) accessTokenByCode(code string) (Token, error) {
-	return a.accessToken(authorizationCodeGrant(), url.Values{
-		"code":       []string{code},
-		"grant_type": []string{"authorization_code"},
-	}, nil)
-}
-
-func (a *api) accessTokenByRefreshToken(refreshToken string) (Token, error) {
-	return a.accessToken(refreshTokenGrant(), url.Values{
-		"grant_type":    []string{"refresh_token"},
-		"refresh_token": []string{refreshToken},
-	}, nil)
-}
-
-func (a *api) accessToken(grant grantType, options url.Values, header http.Header) (Token, error) {
+func (a *api) GetToken(grant GrantType, options url.Values, header http.Header) (Token, error) {
 	if !isValidDomain(a.domain) {
 		return nil, oauth2Err("invalid accounts domain")
 	}
@@ -160,18 +285,46 @@ func (a *api) accessToken(grant grantType, options url.Values, header http.Heade
 	return token, nil
 }
 
-func (a *api) refreshToken() error {
+func (a *api) RefreshToken() error {
 	if a.token.RefreshToken() == "" {
 		return oauth2Err("empty refresh token")
 	}
 
-	token, err := a.accessTokenByRefreshToken(a.token.RefreshToken())
+	token, err := a.GetToken(RefreshTokenGrant, url.Values{
+		"grant_type":    []string{"refresh_token"},
+		"refresh_token": []string{a.token.RefreshToken()},
+	}, nil)
 	if err != nil {
 		return err
 	}
 
 	a.token = token
 	return nil
+}
+
+func (a *api) url(path string, q url.Values) (*url.URL, error) {
+	if !isValidDomain(a.domain) {
+		return nil, oauth2Err("invalid accounts domain")
+	}
+
+	endpointURL := "https://" + a.domain + path + "?" + q.Encode()
+
+	return url.Parse(endpointURL)
+}
+
+func (a *api) header() http.Header {
+	authHeader := a.token.TokenType() + " " + a.token.AccessToken()
+
+	header := a.baseHeader()
+	header["Authorization"] = []string{authHeader}
+
+	return header
+}
+
+func (a *api) baseHeader() http.Header {
+	return http.Header{
+		"User-Agent": []string{userAgent},
+	}
 }
 
 func isValidDomain(domain string) bool {
