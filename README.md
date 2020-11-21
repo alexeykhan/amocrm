@@ -38,19 +38,30 @@ User grants access to their account and is redirected back
 with `referer` and `code` GET-parameters attached.
 
 ```go
-amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
+package main
 
-state := amocrm.RandomState()  // store this state as a session identifier
-mode := amocrm.PostMessageMode // options: PostMessageMode, PopupMode
+import (
+    "fmt"
 
-authURL, err := amoCRM.AuthorizeURL(state, mode)
-if err != nil {
-    fmt.Println("Failed to Get auth url:", err)
-    return
+    "github.com/alexeykhan/amocrm"
+	"github.com/alexeykhan/amocrm/api"
+)
+
+func main() {
+    amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
+    
+    state := api.RandomState()  // store this state as a session identifier
+    mode := api.PostMessageMode // options: PostMessageMode, PopupMode
+    
+    authURL, err := amoCRM.AuthorizeURL(state, mode)
+    if err != nil {
+        fmt.Println("Failed to Get auth url:", err)
+        return
+    }
+    
+    fmt.Println("Redirect user to this URL:")
+    fmt.Println(authURL)
 }
-
-fmt.Println("Redirect user to this URL:")
-fmt.Println(authURL)
 ```
 
 **Step №2: Exchange authorization code for token.**
@@ -60,23 +71,33 @@ authorization code respectively to make a handshake with amoCRM and
 Get a fresh set of `access_token`, `refresh_token` and token meta data. 
 
 ```go
-amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
+package main
 
-if err := amoCRM.SetDomain("example.amocrm.ru"); err != nil {
-    fmt.Println("set domain:", err)
-    return
+import (
+    "fmt"
+
+    "github.com/alexeykhan/amocrm"
+)
+
+func main() {
+    amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
+    
+    if err := amoCRM.SetDomain("example.amocrm.ru"); err != nil {
+        fmt.Println("set domain:", err)
+        return
+    }
+    
+    token, err := amoCRM.TokenByCode("authorizationCode")
+    if err != nil {
+        fmt.Println("Get token by code:", err)
+        return
+    }
+    
+    fmt.Println("access_token:", token.GetToken())
+    fmt.Println("refresh_token:", token.RefreshToken())
+    fmt.Println("token_type:", token.TokenType())
+    fmt.Println("expires_at:", token.ExpiresAt().Unix())
 }
-
-token, err := amoCRM.TokenByCode(authCode)
-if err != nil {
-    fmt.Println("Get token by code:", err)
-    return
-}
-
-fmt.Println("access_token:", token.GetToken())
-fmt.Println("refresh_token:", token.RefreshToken())
-fmt.Println("token_type:", token.TokenType())
-fmt.Println("expires_at:", token.ExpiresAt().Unix())
 ```
 
 **Step №3: Make your first API request.**
@@ -84,24 +105,36 @@ fmt.Println("expires_at:", token.ExpiresAt().Unix())
 Set amoCRM accounts domain and token to authorize your requests.
 
 ```go
-amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
+package main
 
-if err := amoCRM.SetDomain("example.amocrm.ru"); err != nil {
-    fmt.Println("set domain:", err)
-    return
+import (
+    "fmt"
+    "time"
+
+    "github.com/alexeykhan/amocrm"
+    "github.com/alexeykhan/amocrm/api"
+)
+
+func main() {
+    amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
+    
+    if err := amoCRM.SetDomain("example.amocrm.ru"); err != nil {
+        fmt.Println("set domain:", err)
+        return
+    }
+    
+    token := api.NewToken("accessToken", "refreshToken", "tokenType", time.Now())
+    if err := amoCRM.SetToken(token); err != nil {
+        fmt.Println("set token:", err)
+        return
+    }
+    
+    accounts, err := amoCRM.Accounts().Current()
+    if err != nil {
+        fmt.Println("fetch current accounts:", err)
+        return
+    }
+    
+    fmt.Println("current accounts:", accounts)
 }
-
-token := amocrm.NewToken("accessToken", "refreshToken", "tokenType", time.Now())
-if err := amoCRM.SetToken(token); err != nil {
-    fmt.Println("set token:", err)
-    return
-}
-
-accounts, err := amoCRM.Accounts().Current()
-if err != nil {
-    fmt.Println("fetch current accounts:", err)
-    return
-}
-
-fmt.Println("current accounts:", accounts)
 ```
