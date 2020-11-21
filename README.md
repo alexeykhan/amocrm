@@ -28,7 +28,7 @@ independent and unofficial API client. Use at your own risk.
 
 ## Installation
 
-`go Get -u github.com/alexeykhan/amocrm`
+`go get -u github.com/alexeykhan/amocrm`
 
 ## Quick Start
 
