@@ -124,14 +124,6 @@ func Example_getCurrentAccount() {
 	}
 
 	// Fetch current accounts with AccountsRepository.
-	//
-	// If you need to fetch all Account relations use Relations() method:
-	// accounts := amoCRM.Accounts()
-	// account, err := accounts.Current(accounts.Relations()...)
-	//
-	// If you need only some of relations, set them explicitly:
-	// accounts := amoCRM.Accounts()
-	// account, err := repository.Current(accounts.WithAmojoID, accounts.WithUserGroups)
 	account, err := amoCRM.Accounts().Current()
 	if err != nil {
 		fmt.Println("fetch current accounts:", err)
