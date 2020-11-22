@@ -112,7 +112,7 @@ import (
     "time"
 
     "github.com/alexeykhan/amocrm"
-    "github.com/alexeykhan/amocrm/api"
+    "github.com/alexeykhan/amocrm/api/accounts"
 )
 
 func main() {
@@ -129,12 +129,12 @@ func main() {
         return
     }
     
-    accounts, err := amoCRM.Accounts().Current()
+    account, err := amoCRM.Accounts().Current(accounts.Relations()...)
     if err != nil {
         fmt.Println("fetch current accounts:", err)
         return
     }
     
-    fmt.Println("current accounts:", accounts)
+    fmt.Println("current accounts:", account)
 }
 ```
