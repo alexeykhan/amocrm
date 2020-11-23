@@ -44,7 +44,6 @@ import (
     "fmt"
 
     "github.com/alexeykhan/amocrm"
-    "github.com/alexeykhan/amocrm/api"
 )
 
 func main() {
