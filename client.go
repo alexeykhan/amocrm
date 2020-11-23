@@ -21,60 +21,87 @@
 package amocrm
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/url"
-
-	"github.com/alexeykhan/amocrm/api"
-	"github.com/alexeykhan/amocrm/api/accounts"
 )
 
-// Provider describes an interface for interacting with amoCRM API.
-type Provider interface {
+// Provider is a wrapper for authorization and making requests.
+type Client interface {
 	AuthorizeURL(state, mode string) (*url.URL, error)
-	TokenByCode(code string) (api.Token, error)
-	SetToken(token api.Token) error
+	TokenByCode(code string) (Token, error)
+	SetToken(token Token) error
 	SetDomain(domain string) error
-	Accounts() accounts.Repository
+	Accounts() Accounts
 }
 
 // Verify interface compliance.
-var _ Provider = (*amoCRM)(nil)
+var _ Client = (*amoCRM)(nil)
 
 type amoCRM struct {
-	api api.Client
+	api *api
+}
+
+// RandomState generates a new random state.
+func RandomState() string {
+	// Converting bytes to hex will always double length. Hence, we can reduce
+	// the amount of bytes by half to produce the correct length of 32 characters.
+	key := make([]byte, 16)
+
+	// https://golang.org/pkg/math/rand/#Rand.Read
+	// Ignore errors as it always returns a nil error.
+	_, _ = rand.Read(key)
+
+	return hex.EncodeToString(key)
 }
 
 // New allocates and returns a new amoCRM API Client.
-func New(clientID, clientSecret, redirectURL string) Provider {
+func New(clientID, clientSecret, redirectURL string) Client {
 	return &amoCRM{
-		api: api.New(clientID, clientSecret, redirectURL),
+		api: newAPI(clientID, clientSecret, redirectURL),
 	}
 }
 
 // AuthorizeURL returns a URL of page to ask for permissions.
 func (a *amoCRM) AuthorizeURL(state, mode string) (*url.URL, error) {
-	return a.api.AuthorizationURL(state, mode)
+	if state == "" {
+		return nil, oauth2Err("empty state")
+	}
+	if mode != PostMessageMode && mode != PopupMode {
+		return nil, oauth2Err("unexpected mode")
+	}
+
+	query := url.Values{
+		"mode":      []string{mode},
+		"state":     []string{state},
+		"client_id": []string{a.api.clientID},
+	}.Encode()
+
+	authURL := "https://www.amocrm.ru/oauth?" + query
+
+	return url.Parse(authURL)
 }
 
 // SetToken stores given token to sign API requests.
-func (a *amoCRM) SetToken(token api.Token) error {
-	return a.api.SetToken(token)
+func (a *amoCRM) SetToken(token Token) error {
+	return a.api.setToken(token)
 }
 
 // SetToken stores given domain to build accounts-specific API endpoints.
 func (a *amoCRM) SetDomain(domain string) error {
-	return a.api.SetDomain(domain)
+	return a.api.setDomain(domain)
 }
 
 // TokenByCode makes a handshake with amoCRM, exchanging given
 // authorization code for a set of tokens.
-func (a *amoCRM) TokenByCode(code string) (api.Token, error) {
-	return a.api.GetToken(api.AuthorizationCodeGrant, url.Values{
+func (a *amoCRM) TokenByCode(code string) (Token, error) {
+	return a.api.getToken(authorizationCodeGrant, url.Values{
 		"code":       []string{code},
 		"grant_type": []string{"authorization_code"},
 	}, nil)
 }
 
 // Accounts returns accounts repository.
-func (a *amoCRM) Accounts() accounts.Repository {
-	return accounts.New(a.api)
+func (a *amoCRM) Accounts() Accounts {
+	return newAccounts(a.api)
 }

@@ -1,3 +1,5 @@
+// The MIT License (MIT)
+//
 // Copyright (c) 2020 Alexey Khan
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package api
+package amocrm
 
 import (
 	"strings"
@@ -131,3 +133,4 @@ func (t *tokenSource) Expired() bool {
 
 	return t.expiresAt.Round(0).Add(-expiryDelta).After(timeNow())
 }
+
