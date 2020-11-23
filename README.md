@@ -54,7 +54,7 @@ func main() {
     
     authURL, err := amoCRM.AuthorizeURL(state, mode)
     if err != nil {
-        fmt.Println("Failed to Get auth url:", err)
+        fmt.Println("failed to get auth url:", err)
         return
     }
     
@@ -88,7 +88,7 @@ func main() {
     
     token, err := amoCRM.TokenByCode("authorizationCode")
     if err != nil {
-        fmt.Println("Get token by code:", err)
+        fmt.Println("get token by code:", err)
         return
     }
     
