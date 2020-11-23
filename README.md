@@ -148,3 +148,13 @@ func main() {
     fmt.Println("current accounts:", account)
 }
 ```
+
+## Development Status: In Progress
+
+This package is under development so any methods, constants or types may be changed 
+in newer versions without backward compatibility with previous ones. Use it at your
+own risk and feel free to fork it anytime.
+
+<hr>
+
+Released under the [MIT License](LICENSE.md).
