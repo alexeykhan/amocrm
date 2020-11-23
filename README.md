@@ -50,8 +50,8 @@ import (
 func main() {
     amoCRM := amocrm.New("clientID", "clientSecret", "redirectURL")
     
-    state := api.RandomState()  // store this state as a session identifier
-    mode := api.PostMessageMode // options: PostMessageMode, PopupMode
+    state := amocrm.RandomState()  // store this state as a session identifier
+    mode := amocrm.PostMessageMode // options: PostMessageMode, PopupMode
     
     authURL, err := amoCRM.AuthorizeURL(state, mode)
     if err != nil {
@@ -93,7 +93,7 @@ func main() {
         return
     }
     
-    fmt.Println("access_token:", token.GetToken())
+    fmt.Println("access_token:", token.AccessToken())
     fmt.Println("refresh_token:", token.RefreshToken())
     fmt.Println("token_type:", token.TokenType())
     fmt.Println("expires_at:", token.ExpiresAt().Unix())
@@ -112,7 +112,6 @@ import (
     "time"
 
     "github.com/alexeykhan/amocrm"
-    "github.com/alexeykhan/amocrm/api/accounts"
 )
 
 func main() {
@@ -123,13 +122,25 @@ func main() {
         return
     }
     
-    token := api.NewToken("accessToken", "refreshToken", "tokenType", time.Now())
+    token := amocrm.NewToken("accessToken", "refreshToken", "tokenType", time.Now())
     if err := amoCRM.SetToken(token); err != nil {
         fmt.Println("set token:", err)
         return
     }
     
-    account, err := amoCRM.Accounts().Current(accounts.Relations()...)
+    cfg := amocrm.AccountsConfig{
+        Relations: []string{
+            amocrm.WithUUID, 
+            amocrm.WithVersion, 
+            amocrm.WithAmojoID,
+            amocrm.WithTaskTypes,
+            amocrm.WithUserGroups,
+            amocrm.WithAmojoRights,
+            amocrm.WithDatetimeSettings,
+        }, 
+    }
+
+    account, err := amoCRM.Accounts().Current(cfg)
     if err != nil {
         fmt.Println("fetch current accounts:", err)
         return

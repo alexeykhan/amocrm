@@ -1,3 +1,5 @@
+// The MIT License (MIT)
+//
 // Copyright (c) 2020 Alexey Khan
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,15 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package accounts
-
-import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-
-	"github.com/alexeykhan/amocrm/api"
-)
+package amocrm
 
 // Account represents amoCRM Account entity json DTO.
 type Account struct {
@@ -82,76 +76,4 @@ type Account struct {
 			TimezoneOffset   string `json:"timezone_offset"`
 		} `json:"datetime_settings"`
 	} `json:"_embedded"`
-}
-
-type Relation uint8
-
-const (
-	WithUUID Relation = iota
-	WithVersion
-	WithAmojoID
-	WithTaskTypes
-	WithUserGroups
-	WithAmojoRights
-	WithDatetimeSettings
-)
-
-var _relations = map[Relation]string{
-	WithUUID:             "uuid",
-	WithVersion:          "version",
-	WithAmojoID:          "amojo_id",
-	WithTaskTypes:        "task_types",
-	WithUserGroups:       "users_groups",
-	WithAmojoRights:      "amojo_rights",
-	WithDatetimeSettings: "datetime_settings",
-}
-
-func Relations() []Relation {
-	values := make([]Relation, 0, len(_relations))
-	for k := range _relations {
-		values = append(values, k)
-	}
-	return values
-}
-
-// Repository describes methods available for Accounts entity.
-type Repository interface {
-	Current(with ...Relation) (*Account, error)
-}
-
-type accounts struct {
-	api api.Client
-}
-
-func New(api api.Client) Repository {
-	return accounts{api: api}
-}
-
-// Current returns an Accounts entity for current authorized user.
-func (a accounts) Current(with ...Relation) (dto *Account, err error) {
-	query := url.Values{}
-	for _, relation := range with {
-		key, valid := _relations[relation]
-		if !valid {
-			return dto, fmt.Errorf("unexpected account relation: %d", relation)
-		}
-		query.Add("with", key)
-	}
-
-	resp, rErr := a.api.Get(api.AccountEndpoint, query, nil)
-	if rErr != nil {
-		return dto, fmt.Errorf("get accounts: %w", rErr)
-	}
-	defer func() {
-		if clErr := resp.Body.Close(); clErr != nil {
-			err = fmt.Errorf("close response body: %w", clErr)
-		}
-	}()
-
-	dto = &Account{}
-	if dErr := json.NewDecoder(resp.Body).Decode(dto); dErr != nil {
-		return dto, fmt.Errorf("decode json response: %w", dErr)
-	}
-
-	return dto, err
 }

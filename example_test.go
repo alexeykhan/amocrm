@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/alexeykhan/amocrm"
-	"github.com/alexeykhan/amocrm/api"
 )
 
 var (
@@ -61,8 +60,8 @@ func Example_getAuthURL() {
 	// Save this random state as a session identifier to verify
 	// user identity when they are redirected back with code.
 	// Set required mode parameter: "post_message" or "popup".
-	state := api.RandomState()
-	mode := api.PostMessageMode
+	state := amocrm.RandomState()
+	mode := amocrm.PostMessageMode
 
 	// Redirect user to authorization URL.
 	authURL, err := amoCRM.AuthorizeURL(state, mode)
@@ -117,14 +116,27 @@ func Example_getCurrentAccount() {
 	}
 
 	// Retrieve token from storage.
-	token := api.NewToken(storage.accessToken, storage.refreshToken, storage.tokenType, storage.expiresAt)
+	token := amocrm.NewToken(storage.accessToken, storage.refreshToken, storage.tokenType, storage.expiresAt)
 	if err := amoCRM.SetToken(token); err != nil {
 		fmt.Println("set token:", err)
 		return
 	}
 
+	// Set up accounts request config.
+	cfg := amocrm.AccountsConfig{
+		Relations: []string{
+			amocrm.WithUUID,
+			amocrm.WithVersion,
+			amocrm.WithAmojoID,
+			amocrm.WithTaskTypes,
+			amocrm.WithUserGroups,
+			amocrm.WithAmojoRights,
+			amocrm.WithDatetimeSettings,
+		},
+	}
+
 	// Fetch current accounts with AccountsRepository.
-	account, err := amoCRM.Accounts().Current()
+	account, err := amoCRM.Accounts().Current(cfg)
 	if err != nil {
 		fmt.Println("fetch current accounts:", err)
 		return
