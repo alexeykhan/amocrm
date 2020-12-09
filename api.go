@@ -95,6 +95,10 @@ func newAPI(clientID, clientSecret, redirectURL string) *api {
 }
 
 func (a *api) get(ep endpoint, q url.Values, h http.Header) (*http.Response, error) {
+	if a.token == nil {
+		return nil, errors.New("invalid token")
+	}
+
 	if a.token.Expired() {
 		if err := a.refreshToken(); err != nil {
 			return nil, err
