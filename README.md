@@ -7,12 +7,12 @@
         <img src="https://img.shields.io/badge/pkg.go.dev-reference-00ADD8?logo=go&logoColor=white" alt="GoDoc Reference">
     </a>
     <a href="https://github.com/alexeykhan/amocrm">
-        <img src="https://img.shields.io/badge/codecov-98%25-success?logo=codecov&logoColor=white" alt="Code Coverage">
+        <img src="https://img.shields.io/badge/codecov-55.1%25-success" alt="Code Coverage">
     </a>
     <a href="https://github.com/alexeykhan/amocrm">
-        <img src="https://img.shields.io/badge/build-passes-success?logo=travis-ci&logoColor=white" alt="Build Status">
+        <img src="https://img.shields.io/badge/build-passes-success" alt="Build Status">
     </a>
-    <a href="https://pkg.go.dev/github.com/alexeykhan/amocrm">
+    <a href="https://github.com/alexeykhan/amocrm/blob/master/LICENSE.md">
         <img src="https://img.shields.io/badge/licence-MIT-success" alt="License">
     </a>
 </p> 
