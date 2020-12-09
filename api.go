@@ -295,6 +295,7 @@ func isValidDomain(domain string) bool {
 	parts := strings.Split(domain, ".")
 	if len(parts) != 3 ||
 		parts[0] == "" ||
+		parts[0] == "www" ||
 		len(parts[0]) > 63 ||
 		parts[1] != "amocrm" ||
 		parts[2] != "ru" && parts[2] != "com" {
