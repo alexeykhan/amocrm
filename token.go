@@ -41,9 +41,6 @@ type Token interface {
 // expiration due to client-server time mismatches.
 const expiryDelta = 10 * time.Second
 
-// timeNow is time.Now but pulled out as a variable for tests.
-var timeNow = time.Now
-
 // tokenJSON is the struct representing the HTTP response from OAuth2
 // providers returning a token in JSON form.
 type tokenJSON struct {
@@ -134,6 +131,6 @@ func (t *tokenSource) Expired() bool {
 		return true
 	}
 
-	return t.expiresAt.Round(0).Add(-expiryDelta).After(timeNow())
+	return t.expiresAt.Round(0).Add(-expiryDelta).Before(time.Now())
 }
 
