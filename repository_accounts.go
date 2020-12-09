@@ -78,7 +78,11 @@ func (a accounts) Current(cfg AccountsConfig) (dto *Account, err error) {
 	}
 	defer func() {
 		if clErr := resp.Body.Close(); clErr != nil {
-			err = fmt.Errorf("close response body: %w", clErr)
+			if err != nil {
+				err = fmt.Errorf("close response body: %v: %v", clErr, err)
+			} else {
+				err = fmt.Errorf("close response body: %w", clErr)
+			}
 		}
 	}()
 
