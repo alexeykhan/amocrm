@@ -44,6 +44,9 @@ type Accounts interface {
 	Current(cfg AccountsConfig) (*Account, error)
 }
 
+// Verify interface compliance.
+var _ Accounts = accounts{}
+
 type accounts struct {
 	api *api
 }

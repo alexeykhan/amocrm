@@ -61,6 +61,9 @@ type tokenSource struct {
 	expiresAt    time.Time
 }
 
+// Verify interface compliance.
+var _ Token = (*tokenSource)(nil)
+
 // NewToken allocates and returns a new TokenSource.
 func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) Token {
 	return &tokenSource{
