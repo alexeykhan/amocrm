@@ -65,7 +65,7 @@ func (a accounts) Current(cfg AccountsConfig) (dto *Account, err error) {
 		case WithUUID, WithVersion, WithAmojoID, WithTaskTypes, WithUserGroups, WithAmojoRights, WithDatetimeSettings:
 			query.Add("with", relation)
 		default:
-			return dto, fmt.Errorf("unexpected account relation: %d", relation)
+			return dto, fmt.Errorf("unexpected account relation: %s", relation)
 		}
 	}
 
