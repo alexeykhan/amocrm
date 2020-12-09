@@ -59,11 +59,11 @@ type tokenSource struct {
 }
 
 // Verify interface compliance.
-var _ Token = (*tokenSource)(nil)
+var _ Token = tokenSource{}
 
 // NewToken allocates and returns a new TokenSource.
 func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) Token {
-	return &tokenSource{
+	return tokenSource{
 		accessToken:  accessToken,
 		refreshToken: refreshToken,
 		tokenType:    tokenType,
@@ -73,22 +73,14 @@ func NewToken(accessToken, refreshToken, tokenType string, expiresAt time.Time) 
 
 // GetToken returns the token that authorizes and
 // authenticates the requests.
-func (t *tokenSource) AccessToken() string {
-	if t == nil {
-		return ""
-	}
-
+func (t tokenSource) AccessToken() string {
 	return t.accessToken
 }
 
 // RefreshToken returns a token that's used by the application
 // (as opposed to the user) to refresh the access token
 // if it expires.
-func (t *tokenSource) RefreshToken() string {
-	if t == nil {
-		return ""
-	}
-
+func (t tokenSource) RefreshToken() string {
 	return t.refreshToken
 }
 
@@ -97,19 +89,13 @@ func (t *tokenSource) RefreshToken() string {
 // If zero, TokenSource implementations will reuse the same token forever
 // and RefreshToken or equivalent mechanisms for that TokenSource will
 // not be used.
-func (t *tokenSource) ExpiresAt() time.Time {
-	if t == nil {
-		return time.Now().Add(-expiryDelta)
-	}
-
+func (t tokenSource) ExpiresAt() time.Time {
 	return t.expiresAt
 }
 
 // TokenType returns token type or "Bearer" by default.
-func (t *tokenSource) TokenType() string {
+func (t tokenSource) TokenType() string {
 	switch {
-	case t == nil:
-		return ""
 	case strings.EqualFold(t.tokenType, "bearer"), t.tokenType == "":
 		return "Bearer"
 	case strings.EqualFold(t.tokenType, "mac"):
@@ -122,7 +108,7 @@ func (t *tokenSource) TokenType() string {
 }
 
 // Expired reports whether t has no GetToken or is expired.
-func (t *tokenSource) Expired() bool {
+func (t tokenSource) Expired() bool {
 	if t.expiresAt.IsZero() {
 		return false
 	}
